@@ -1,0 +1,2 @@
+drupal-newsletter-patch
+=======================

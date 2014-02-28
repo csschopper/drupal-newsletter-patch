@@ -1,0 +1,84 @@
+<?php
+/**
+ * Implements hook_block_info().
+ */
+ 
+//============= ser edit form alter ===================================//
+
+function  custom_newsletter_form_alter(&$form, $form_state, $form_id) {
+    global $user;
+    if ($form_id === 'user_profile_form') {
+      // var_dump ($form);
+      // dsm($form);
+      // hide($form['account']['pass']);
+      // hide($form['account']['current_pass_required_values']);
+       hide($form['contact']);
+       hide($form['mimemail']);
+       hide($form['account']['timezone']);
+       hide($form['locale']);
+       //  $form['account']['name'];
+        $form['account']['pass']['#weight'] = 2;
+        $form['account']['name']['#weight'] = 1;
+        $form['language']['#weight'] = 3;
+         $form['account']['current_pass']['#title'] = t('Current Password');
+ //$form['account']['pass']['#description'] = t(''); //Removing description from password field.
+         $form['timezone']['#access'] = FALSE;
+        
+             $subscriber = $mail = FALSE;
+                if (!empty($user->mail)) {
+                    $subscriber = simplenews_subscriber_load_by_mail($user->mail);
+                    $mail = $user->mail;
+                }
+                
+                foreach (simplenews_category_get_visible() as $newsletter) {
+                    $options[$newsletter->tid] = check_plain(_simplenews_newsletter_name($newsletter));
+                    $default_value[$newsletter->tid] = FALSE;
+                }
+                    if ($subscriber) {
+                        // If there is an existing subscriber object, use the existing settings.
+                        $default_value = array_merge($default_value, $subscriber->tids);
+                    }
+            if (count($options)) {
+                // @todo Change this text: use less words;
+                $form['simplenews'] = array(
+                '#type' => 'fieldset',
+                '#description' => t('Select the newsletter(s) to which you wish to subscribe.'),
+                '#weight' => 50,
+                );
+                $form['simplenews']['newsletters'] = array(
+                '#type' => 'checkboxes',
+                '#options' => $options,
+                '#default_value' => $default_value,
+                );
+            }
+            if (count($options)) {
+                $form['simplenews_hidden'] = array(
+                '#type' => 'hidden',
+                '#value' => implode(',', $options),
+                );
+            }
+            
+            
+    }
+   
+}
+//========= user edit form alter settings ===================//
+function custom_newsletter_user_update(&$edit, $account, $category){
+     
+    foreach($edit['newsletters'] as $tid => $val){
+        
+         $account1 = simplenews_load_user_by_mail($account->mail);
+         $confirm = simplenews_require_double_opt_in($tid, $account1);
+         
+        if($val){  // subscribe newsletter
+          
+          simplenews_subscribe_user($account->mail, $tid, $confirm, 'website');
+          
+ 
+         }
+         else{  // unsubscribe newsletter            
+            simplenews_unsubscribe_user($account->mail, $tid, $confirm, 'website');
+           
+        }
+    }
+}

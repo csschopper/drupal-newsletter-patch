@@ -1,0 +1,5 @@
+name = custom_newsletter
+description = Newsletter pluggin.
+core = 7.x
+package = custom
+dependencies[] = simplenews
